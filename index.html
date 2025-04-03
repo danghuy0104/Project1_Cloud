@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background: #f4f4f9; 
+            margin: 0;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1400px;
+            width: 95%;
+            margin: auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+        }
+        input, select, button { 
+            margin: 5px; 
+            padding: 10px; 
+            border-radius: 5px; 
+            border: 1px solid #ccc; 
+        }
+        button { 
+            background: #6200ea; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background: #3700b3; 
+        }
+        
+        /* Căn chỉnh task list */
+        .task, .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .task-header {
+            font-weight: bold;
+            background: #ddd;
+        }
+        .task {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        /* Đặt chiều rộng cố định cho từng cột */
+        .task span, .task-header span {
+            padding: 0 5px;
+            box-sizing: border-box; /* Đảm bảo padding không làm lệch kích thước */
+        }
+        /* Điều chỉnh chiều rộng và căn giữa các cột */
+        .task span:nth-child(1), .task-header span:nth-child(1) { 
+            width: 10%; 
+            text-align: center; /* Căn giữa Title */
+        }
+        .task span:nth-child(2), .task-header span:nth-child(2) { 
+            width: 30%; 
+            text-align: left; /* Giữ căn trái cho Description */
+        }
+        .task span:nth-child(3), .task-header span:nth-child(3) { 
+            width: 15%; 
+            text-align: center; /* Căn giữa Start Date */
+        }
+        .task span:nth-child(4), .task-header span:nth-child(4) { 
+            width: 15%; 
+            text-align: center; /* Căn giữa Due Date */
+        }
+        .task span:nth-child(5), .task-header span:nth-child(5) { 
+            width: 10%; 
+            text-align: center; /* Căn giữa Priority */
+        }
+        .task span:nth-child(6), .task-header span:nth-child(6) { 
+            width: 10%; 
+            text-align: center; /* Căn giữa Status */
+        }
+        .task span:nth-child(7), .task-header span:nth-child(7) { 
+            width: 30%; 
+            text-align: center; /* Căn giữa Actions */
+        }
+
+        /* Căn chỉnh nút trong cột Actions */
+        .task span:last-child {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+        .task span:last-child button {
+            padding: 5px 10px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .filter-section { 
+            margin: 20px 0; 
+            display: flex; 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .filter-section select, .filter-section input {
+            flex: 1;
+            min-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Task Manager</h2>
+        <!-- Form thêm task -->
+        <div>
+            <input type="text" id="taskTitle" placeholder="Task title">
+            <input type="text" id="taskDescription" placeholder="Description">
+            <input type="date" id="taskStartDate" placeholder="Start Date">
+            <input type="date" id="taskDueDate" placeholder="Due Date">
+            <select id="taskPriority">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+            <select id="taskStatus">
+                <option value="incomplete">Incomplete</option>
+                <option value="completed">Completed</option>
+            </select>
+            <button onclick="addTask()">Add Task</button>
+        </div>
+
+        <!-- Tìm kiếm -->
+        <div class="filter-section">
+            <input type="text" id="searchKeyword" placeholder="Search by keyword">
+            <button onclick="searchTasks()">Search</button>
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="filter-section">
+            <select id="filterStatus">
+                <option value="">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="incomplete">Incomplete</option>
+            </select>
+            <select id="filterPriority">
+                <option value="">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+            <input type="date" id="filterStartDate" placeholder="Start Date">
+            <input type="date" id="filterDueDate" placeholder="Due Date">
+            <button onclick="filterTasks()">Filter</button>
+            <button onclick="showAllTasks()">Show All</button>
+            <button onclick="showCompletedTasks()">Show Completed</button>
+            <button onclick="showIncompleteTasks()">Show Incomplete</button>
+        </div>
+
+        <!-- Danh sách task -->
+        <div class="task-header">
+            <span>Title</span>
+            <span>Description</span>
+            <span>Start Date</span>
+            <span>Due Date</span>
+            <span>Priority</span>
+            <span>Status</span>
+            <span>Actions</span>
+        </div>
+        <div id="taskList"></div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://127.0.0.1:5000/tasks';
+
+        // Hiển thị danh sách task
+        async function displayTasks(tasks) {
+            const taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+            tasks.forEach(task => {
+                taskList.innerHTML += `
+                    <div class="task">
+                        <span>${task.title}</span>
+                        <span>${task.description}</span>
+                        <span>${task.start_date}</span>
+                        <span>${task.due_date}</span>
+                        <span>${task.priority}</span>
+                        <span>${task.status}</span>
+                        <span>
+                            <button onclick="editTask(${task.id}, '${task.title}', '${task.description}', '${task.start_date}', '${task.due_date}', '${task.priority}')">Edit</button>
+                            <button onclick="deleteTask(${task.id})" style="background:#d32f2f;">Delete</button>
+                            <button onclick="toggleStatus(${task.id}, '${task.status}')" style="background:${task.status === 'completed' ? '#4caf50' : '#ff9800'}">
+                                ${task.status === 'completed' ? 'Mark Incomplete' : 'Mark Complete'}
+                            </button>
+                        </span>
+                    </div>`;
+            });
+        }
+
+        // Lấy tất cả tasks
+        async function fetchTasks(params = {}) {
+            const query = new URLSearchParams(params).toString();
+            const response = await fetch(`${apiUrl}${query ? '?' + query : ''}`);
+            const tasks = await response.json();
+            return tasks;
+        }
+
+        // Thêm task
+        async function addTask() {
+            const title = document.getElementById("taskTitle").value;
+            const description = document.getElementById("taskDescription").value;
+            const start_date = document.getElementById("taskStartDate").value;
+            const due_date = document.getElementById("taskDueDate").value;
+            const priority = document.getElementById("taskPriority").value;
+            const status = document.getElementById("taskStatus").value;
+
+            if (!title) return alert("Task title cannot be empty!");
+
+            await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title, description, start_date, due_date, priority, status })
+            });
+            document.getElementById("taskTitle").value = "";
+            document.getElementById("taskDescription").value = "";
+            document.getElementById("taskStartDate").value = "";
+            document.getElementById("taskDueDate").value = "";
+            fetchTasks().then(displayTasks);
+        }
+
+        // Sửa task
+        async function editTask(id, oldTitle, oldDescription, oldStartDate, oldDueDate, oldPriority, oldStatus) {
+            const newTitle = prompt("Edit Task Title:", oldTitle);
+            const newDescription = prompt("Edit Description:", oldDescription);
+            const newStartDate = prompt("Start Date (YYYY-MM-DD):", oldStartDate);
+            const newDueDate = prompt("Due Date (YYYY-MM-DD):", oldDueDate);
+            const newPriority = prompt("Priority (low, medium, high):", oldPriority);
+
+            if (newTitle) {
+                await fetch(`${apiUrl}/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: newTitle,
+                        description: newDescription,
+                        start_date: newStartDate,
+                        due_date: newDueDate,
+                        priority: newPriority,
+                    })
+                });
+                fetchTasks().then(displayTasks);
+            }
+        }
+
+        // Xóa task
+        async function deleteTask(id) {
+            await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+            fetchTasks().then(displayTasks);
+        }
+
+        // Cập nhật trạng thái
+        async function toggleStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'completed' ? 'incomplete' : 'completed';
+            await fetch(`${apiUrl}/${id}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: newStatus })
+            });
+            fetchTasks().then(displayTasks);
+        }
+
+        // Tìm kiếm theo từ khóa
+        async function searchTasks() {
+            const keyword = document.getElementById("searchKeyword").value; // Sửa lỗi cú pháp
+            const tasks = await fetchTasks({ search: keyword });
+            displayTasks(tasks);
+        }
+
+        // Lọc task
+        async function filterTasks() {
+            const status = document.getElementById("filterStatus").value;
+            const priority = document.getElementById("filterPriority").value;
+            const start_date = document.getElementById("filterStartDate").value;
+            const due_date = document.getElementById("filterDueDate").value;
+
+            let filteredTasks = await fetchTasks({ status, priority });
+
+            if (start_date) {
+                filteredTasks = filteredTasks.filter(task => task.start_date === start_date);
+            }
+            if (due_date) {
+                filteredTasks = filteredTasks.filter(task => task.due_date === due_date);
+            }
+
+            displayTasks(filteredTasks);
+        }
+
+        // Hiển thị tất cả tasks
+        function showAllTasks() {
+            fetchTasks().then(displayTasks);
+        }
+
+        // Hiển thị tasks hoàn thành
+        function showCompletedTasks() {
+            fetchTasks({ status: 'completed' }).then(displayTasks);
+        }
+
+        // Hiển thị tasks chưa hoàn thành
+        function showIncompleteTasks() {
+            fetchTasks({ status: 'incomplete' }).then(displayTasks);
+        }
+
+        // Tải danh sách khi khởi động
+        fetchTasks().then(displayTasks);
+    </script>
+</body>
+</html>
