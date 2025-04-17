@@ -176,7 +176,7 @@
     </div>
 
     <script>
-        const apiUrl = 'http://127.0.0.1:5000/tasks';
+        const apiUrl = 'http://TaskManagerLoadBanlancer-760204952.us-east-1.elb.amazonaws.com/tasks';
 
         // Hiển thị danh sách task
         async function displayTasks(tasks) {
@@ -234,7 +234,7 @@
         }
 
         // Sửa task
-        async function editTask(id, oldTitle, oldDescription, oldStartDate, oldDueDate, oldPriority, oldStatus) {
+        async function editTask(id, oldTitle, oldDescription, oldStartDate, oldDueDate, oldPriority) {
             const newTitle = prompt("Edit Task Title:", oldTitle);
             const newDescription = prompt("Edit Description:", oldDescription);
             const newStartDate = prompt("Start Date (YYYY-MM-DD):", oldStartDate);
@@ -276,7 +276,7 @@
 
         // Tìm kiếm theo từ khóa
         async function searchTasks() {
-            const keyword = document.getElementById("searchKeyword").value; // Sửa lỗi cú pháp
+            const keyword = document.getElementById("searchKeyword").value;
             const tasks = await fetchTasks({ search: keyword });
             displayTasks(tasks);
         }

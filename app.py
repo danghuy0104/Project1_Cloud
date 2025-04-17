@@ -75,7 +75,7 @@ def update_task(task_id):
         task["start_date"] = data.get("start_date", task["start_date"])
         task["due_date"] = data.get("due_date", task["due_date"])
         task["priority"] = data.get("priority", task["priority"])
-        task["status"] = data.get("status", task["status"])
+        task["status"] = data.get("status", task["status"])  # Thêm status vào update
 
         table.put_item(Item=task)
         return jsonify(task)
